@@ -1,7 +1,12 @@
 #include "fake_process.h"
 #include "linked_list.h"
+#define NUM_CPU 5
 #pragma once
 
+typedef struct {
+  FakePCB* running;
+
+} CPU_core;
 
 typedef struct {
   ListItem list;
@@ -21,6 +26,7 @@ typedef struct FakeOS{
   void* schedule_args;
 
   ListHead processes;
+  CPU_core cpu_list[NUM_CPU];
 } FakeOS;
 
 void FakeOS_init(FakeOS* os);

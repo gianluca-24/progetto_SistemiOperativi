@@ -5,12 +5,16 @@
 #include "fake_os.h"
 
 void FakeOS_init(FakeOS* os) {
-  os->running=0;
+  // os->running=0;
   List_init(&os->ready);
   List_init(&os->waiting);
   List_init(&os->processes);
   os->timer=0;
   os->schedule_fn=0;
+
+  for (int i = 0; i < NUM_CPU; i++){
+    os->cpu_list[i].running = 0;
+  }
 }
 
 void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
