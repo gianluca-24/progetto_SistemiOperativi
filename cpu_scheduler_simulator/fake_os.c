@@ -41,6 +41,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
 
   // all fine, no such pcb exists
   FakePCB* new_pcb=(FakePCB*) malloc(sizeof(FakePCB));
+  
   new_pcb->list.next=new_pcb->list.prev=0;
   new_pcb->pid=p->pid;
   new_pcb->events=p->events;
@@ -63,6 +64,12 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
       cpu->running = new_pcb;
     } else{
       List_pushBack(&os->ready, (ListItem*) new_pcb);
+      new_pcb->actual_burst = e->duration;
+      //all'istante 0 il predicted è uguale all'originale
+      new_pcb->predicted_burst = new_pcb->actual_burst;
+      // if (os->schedule_fn) {
+      //   (*os->schedule_fn)(os, os->schedule_args);
+      // }
     }
     break;
   case IO:
@@ -73,9 +80,6 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
     ;
   }
 }
-
-
-
 
 void FakeOS_simStep(FakeOS* os){
   
@@ -124,8 +128,14 @@ void FakeOS_simStep(FakeOS* os){
         e=(ProcessEvent*) pcb->events.first;
         switch (e->type){
         case CPU:
+        //CHIAMATA A SCHEDULER
           printf("\t\tmove to ready\n");
+          pcb->actual_burst = e->duration;
           List_pushBack(&os->ready, (ListItem*) pcb);
+
+          // if (os->schedule_fn) {
+          //   (*os->schedule_fn)(os, os->schedule_args);
+          // }
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -162,6 +172,9 @@ void FakeOS_simStep(FakeOS* os){
         case CPU:
           printf("\t\tmove to ready\n");
           List_pushBack(&os->ready, (ListItem*) running);
+          // if (os->schedule_fn) {
+          //   (*os->schedule_fn)(os, os->schedule_args);
+          // }
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -172,17 +185,17 @@ void FakeOS_simStep(FakeOS* os){
         cpu->running=0;
       }
     } else{
-          // call schedule, if defined
-          
-      // if (os->schedule_fn && ! os->running){
-      //   (*os->schedule_fn)(os, os->schedule_args); 
-      // }
+      if (os->schedule_fn && ! cpu->running){
+        (*os->schedule_fn)(os, os->schedule_args);
+        cpu->running=(FakePCB*) List_popFront(&os->ready);
+      }
 
       // if running not defined and ready queue not empty
       // put the first in ready to run
-      if (! cpu->running && os->ready.first) {
-        cpu->running=(FakePCB*) List_popFront(&os->ready);
-      }
+
+      // if (! cpu->running && os->ready.first) {
+      //   cpu->running=(FakePCB*) List_popFront(&os->ready);
+      // }
 
     }
 
@@ -190,5 +203,4 @@ void FakeOS_simStep(FakeOS* os){
   ++os->timer;
 }
 
-void FakeOS_destroy(FakeOS* os) {
-}
+void FakeOS_destroy(FakeOS* os) {}

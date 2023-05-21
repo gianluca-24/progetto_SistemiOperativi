@@ -5,9 +5,64 @@
 
 FakeOS os;
 
+typedef struct{
+  float quantum;
+  float alpha;
+} SJF;
+
 typedef struct {
   int quantum;
 } SchedRRArgs;
+
+
+void sched_SJF(FakeOS* os,void* args_){
+  SJF* sjf = (SJF*)args_;
+  //ordina l'array ready in base al processo che ha l'expected minore
+  //col primo ciclo calcolo tutti i predicted
+  ListItem* aux=os->ready.first;
+  while (aux){
+    FakePCB* pcb =(FakePCB*) aux;
+    pcb->predicted_burst = sjf->alpha * pcb->actual_burst + (1 - sjf->alpha) * pcb->predicted_burst;
+    aux = aux->next;
+  }
+
+  //sort della lista ready rispetto al predicted burst
+  // ListItem* aux = os->ready.first;
+  // while (aux){
+  //   FakePCB* pcb =(FakePCB*) aux;
+  // }
+  //mi serve un doppio ciclo while sul quale navigo con i list item ->next e ->prev.
+  //in parallelo a queste iterazioni devo portarmi dietro il cast a pcb per effettuare
+  //il confronto tra predicted_Value per sortare l'array. Posso implementarlo con un bubble sort.
+  //BUBBLE SORT CON LINKED LIST
+//   void bubbleSort(struct Node* head) {
+//     int swapped, i;
+//     struct Node* ptr1;
+//     struct Node* lptr = NULL;
+
+//     // Checking for empty list
+//     if (head == NULL)
+//         return;
+
+//     do {
+//         swapped = 0;
+//         ptr1 = head;
+
+//         while (ptr1->next != lptr) {
+//             if (ptr1->data > ptr1->next->data) {
+//                 swap(ptr1, ptr1->next);
+//                 swapped = 1;
+//             }
+//             ptr1 = ptr1->next;
+//         }
+//         lptr = ptr1;
+//     } while (swapped);
+// }
+
+  return;
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 void schedRR(FakeOS* os, void* args_){
   SchedRRArgs* args=(SchedRRArgs*)args_;
@@ -37,13 +92,15 @@ void schedRR(FakeOS* os, void* args_){
     List_pushFront(&pcb->events, (ListItem*)qe);
   }
 };
+//////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv) {
   FakeOS_init(&os);
-  SchedRRArgs srr_args;
-  srr_args.quantum=5;
-  os.schedule_args=&srr_args;
-  os.schedule_fn=schedRR;
+  SJF sjf_args;
+  sjf_args.alpha = 0.7;
+
+  os.schedule_args=&sjf_args;
+  os.schedule_fn=sched_SJF;
   
   for (int i=1; i<argc; ++i){
     FakeProcess new_process;

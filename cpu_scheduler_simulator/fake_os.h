@@ -7,6 +7,10 @@ typedef struct {
   ListItem list;
   int pid;
   ListHead events;
+  //predicted burst salva l'ultimo valore predettp
+  float predicted_burst;
+  //actual burst slava il valore effettivo del burst
+  int actual_burst;
 } FakePCB;
 
 typedef struct {
@@ -24,7 +28,6 @@ typedef struct FakeOS{
   int timer;
   ScheduleFn schedule_fn;
   void* schedule_args;
-
   ListHead processes;
   CPU_core cpu_list[NUM_CPU];
 } FakeOS;
@@ -32,3 +35,4 @@ typedef struct FakeOS{
 void FakeOS_init(FakeOS* os);
 void FakeOS_simStep(FakeOS* os);
 void FakeOS_destroy(FakeOS* os);
+CPU_core sjf_algorithm();
