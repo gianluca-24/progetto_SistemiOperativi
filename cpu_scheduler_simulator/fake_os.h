@@ -4,15 +4,15 @@
 #pragma once
 
 typedef struct {
-  FakePCB* running;
-
-} CPU_core;
-
-typedef struct {
   ListItem list;
   int pid;
   ListHead events;
 } FakePCB;
+
+typedef struct {
+  FakePCB* running;
+  //quantum
+} CPU_core;
 
 struct FakeOS;
 typedef void (*ScheduleFn)(struct FakeOS* os, void* args);
