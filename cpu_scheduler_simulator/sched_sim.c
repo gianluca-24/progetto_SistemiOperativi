@@ -6,7 +6,6 @@
 FakeOS os;
 
 typedef struct{
-  float quantum;
   float alpha;
 } SJF;
 
@@ -14,90 +13,131 @@ typedef struct {
   int quantum;
 } SchedRRArgs;
 
-
-void sched_SJF(FakeOS* os,void* args_){
-  SJF* sjf = (SJF*)args_;
-  //ordina l'array ready in base al processo che ha l'expected minore
-  //col primo ciclo calcolo tutti i predicted
-  ListItem* aux=os->ready.first;
-  while (aux){
-    FakePCB* pcb =(FakePCB*) aux;
-    pcb->predicted_burst = sjf->alpha * pcb->actual_burst + (1 - sjf->alpha) * pcb->predicted_burst;
-    aux = aux->next;
+int is_running(FakeOS* os){
+  for (int i = 0; i < NUM_CPU; i++){
+    if (os->cpu_list->running){
+      return 1;
+    }
   }
-
-  //sort della lista ready rispetto al predicted burst
-  // ListItem* aux = os->ready.first;
-  // while (aux){
-  //   FakePCB* pcb =(FakePCB*) aux;
-  // }
-  //mi serve un doppio ciclo while sul quale navigo con i list item ->next e ->prev.
-  //in parallelo a queste iterazioni devo portarmi dietro il cast a pcb per effettuare
-  //il confronto tra predicted_Value per sortare l'array. Posso implementarlo con un bubble sort.
-  //BUBBLE SORT CON LINKED LIST
-//   void bubbleSort(struct Node* head) {
-//     int swapped, i;
-//     struct Node* ptr1;
-//     struct Node* lptr = NULL;
-
-//     // Checking for empty list
-//     if (head == NULL)
-//         return;
-
-//     do {
-//         swapped = 0;
-//         ptr1 = head;
-
-//         while (ptr1->next != lptr) {
-//             if (ptr1->data > ptr1->next->data) {
-//                 swap(ptr1, ptr1->next);
-//                 swapped = 1;
-//             }
-//             ptr1 = ptr1->next;
-//         }
-//         lptr = ptr1;
-//     } while (swapped);
-// }
-
-  return;
+  return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 
-void schedRR(FakeOS* os, void* args_){
-  SchedRRArgs* args=(SchedRRArgs*)args_;
+// void swap_elem(FakeOS* os, ListItem* item1, ListItem* item2) {
+//   printf("swap\n");
+//   if (os->ready.size < 2) return;
 
-  // look for the first process in ready
-  // if none, return
-  if (! os->ready.first)
-    return;
+//   if (item2->next != NULL && item1->prev != NULL){
+//       item1->next = item2->next;
+//       item2->prev = item1->prev;
+//       if (item1->next != NULL) {
+//           item1->next->prev = item1;
+//       }
+//       if (item2->prev != NULL) {
+//           item2->prev->next = item2;
+//       }
+//       item1->prev = item2;
+//       item2->next = item1;
+//   } else if(item2->next == NULL && item1->prev == NULL){
+//     //ci sono solo due elementi
+//       printf("Ci sono solo due elementi\n");
+//       ListItem* prev1 = item1->prev;
+//       ListItem* next1 = item1->next;
+//       ListItem* prev2 = item2->prev;
+//       ListItem* next2 = item2->next;
 
-  FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
-  os->running=pcb;
+//       if (prev1 != NULL) prev1->next = item2;
+//       // else list->first = item2;
+//       else os->ready.first = item2;
+
+//       // if (next1 != NULL) next1->prev = item2;
+//       // else list->last = item2;
+
+//       // if (prev2 != NULL) prev2->next = item1;
+//       // else list->first = item1;
+
+//       // if (next2 != NULL) next2->prev = item1;
+//       // else list->last = item1;
+
+//       // item1->prev = prev2;
+//       // item1->next = next2;
+//       // item2->prev = prev1;
+//       // item2->next = next1;
+//     }
+    
+//     return;
+// }
+
+void sched_SJF(FakeOS* os,void* args_){
+  // printf("ciao\n");
+  if (!os->ready.first || !os->ready.first->next) return;
+
+  SJF* sjf = (SJF*)args_;
+
+  ListItem* aux=os->ready.first;
+  FakePCB* aux_pcb=(FakePCB*) malloc(sizeof(FakePCB));
   
-  assert(pcb->events.first);
-  ProcessEvent* e = (ProcessEvent*)pcb->events.first;
-  assert(e->type==CPU);
+  // float pred;
+  // //probabilmente è sbagliato calcolare la predizione ogni volta che si chiama lo scheduler
+  // while (aux){
+  //   // printf("while aggiornamento predicted\n");
+  //   aux_pcb =(FakePCB*) aux;
+  //   ProcessEvent* e=(ProcessEvent*) aux_pcb->events.first;
+  //   aux_pcb->actual_burst = e->duration;
+  //   assert(e->type==CPU);
+  //   //previsione del burst
+  //   pred = aux_pcb->predicted_burst;
+  //   aux_pcb->predicted_burst = sjf->alpha * aux_pcb->actual_burst + (1 - sjf->alpha) * pred;
+  //   printf("predicted burst proc %d: %f\n",aux_pcb->pid, aux_pcb->predicted_burst);
+  //   aux = aux->next;
+  // }
 
-  // look at the first event
-  // if duration>quantum
-  // push front in the list of event a CPU event of duration quantum
-  // alter the duration of the old event subtracting quantum
-  if (e->duration>args->quantum) {
-    ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
-    qe->list.prev=qe->list.next=0;
-    qe->type=CPU;
-    qe->duration=args->quantum;
-    e->duration-=args->quantum;
-    List_pushFront(&pcb->events, (ListItem*)qe);
+  ////////////////////////
+  //DOMANI RICOMINCIARE DA QUA!!!
+  //SCORRERE LA LISTA DAI PCB E INVERTIRE I PUNTATORI DEL PCB
+  // aux=os->ready.first;
+  // aux_pcb =(FakePCB*) aux;
+  // while (aux_pcb){
+  //   printf("pid processo:  %d\n", aux_pcb->pid);
+  //   aux_pcb = (FakePCB*) aux_pcb->list.next;
+  // }
+  ////////////////////////
+
+  int swap;
+  ListItem* item1;
+  ListItem* item2 = NULL;
+
+  do{
+    swap = 0;
+    item1 = os->ready.first;
+
+    while (item1->next != item2){
+      FakePCB* curr_pcb = (FakePCB*)item1;
+      FakePCB* next_pcb = (FakePCB*)item1->next;
+      if (curr_pcb->predicted_burst > next_pcb->predicted_burst){
+        printf("swap\n");
+        //TO DO
+        swap = 1;
+      }
+      item1 = item1->next;
+    }
+    item2 = item1;
+  } while (swap);
+
+  //verifica swap
+  aux=os->ready.first;
+  while (aux){
+    aux_pcb =(FakePCB*) aux;
+    printf("predicted burst proc %d: %f\n",aux_pcb->pid, aux_pcb->predicted_burst);
+    aux = aux->next;
   }
-};
-//////////////////////////////////////////////////////////////////////////
+  return;
+}
 
 int main(int argc, char** argv) {
   FakeOS_init(&os);
   SJF sjf_args;
-  sjf_args.alpha = 0.7;
+  sjf_args.alpha = 0.5;
 
   os.schedule_args=&sjf_args;
   os.schedule_fn=sched_SJF;
@@ -117,7 +157,8 @@ int main(int argc, char** argv) {
   while(os.running
         || os.ready.first
         || os.waiting.first
-        || os.processes.first){
+        || os.processes.first
+        || is_running(&os)){
     FakeOS_simStep(&os);
   }
 }

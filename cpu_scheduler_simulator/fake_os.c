@@ -55,6 +55,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
       break;
     }
   }
+
   // depending on the type of the first event
   // we put the process either in ready or in waiting
   ProcessEvent* e=(ProcessEvent*)new_pcb->events.first;
@@ -64,12 +65,13 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
       cpu->running = new_pcb;
     } else{
       List_pushBack(&os->ready, (ListItem*) new_pcb);
-      new_pcb->actual_burst = e->duration;
+      
       //all'istante 0 il predicted è uguale all'originale
+      new_pcb->actual_burst = e->duration;
       new_pcb->predicted_burst = new_pcb->actual_burst;
-      // if (os->schedule_fn) {
-      //   (*os->schedule_fn)(os, os->schedule_args);
-      // }
+      if (os->schedule_fn) {
+        (*os->schedule_fn)(os, os->schedule_args);
+      }
     }
     break;
   case IO:
@@ -130,12 +132,16 @@ void FakeOS_simStep(FakeOS* os){
         case CPU:
         //CHIAMATA A SCHEDULER
           printf("\t\tmove to ready\n");
-          pcb->actual_burst = e->duration;
-          List_pushBack(&os->ready, (ListItem*) pcb);
 
-          // if (os->schedule_fn) {
-          //   (*os->schedule_fn)(os, os->schedule_args);
-          // }
+          pcb->actual_burst = e->duration;
+          float pred = pcb->predicted_burst;
+          pcb->predicted_burst = ALPHA * pcb->actual_burst + ALPHA * pred;
+
+
+          List_pushBack(&os->ready, (ListItem*) pcb);
+          if (os->schedule_fn && os->ready.first) {
+            (*os->schedule_fn)(os, os->schedule_args);
+          }
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -171,10 +177,15 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
+          //calcolo predizione quando inserisco l'elemento e non ogni volta che chiamo lo scheduler
+          running->actual_burst = e->duration;
+          float pred = running->predicted_burst;
+          running->predicted_burst = ALPHA * running->actual_burst + ALPHA * pred;
+
           List_pushBack(&os->ready, (ListItem*) running);
-          // if (os->schedule_fn) {
-          //   (*os->schedule_fn)(os, os->schedule_args);
-          // }
+          if (os->schedule_fn && os->ready.first) {
+            (*os->schedule_fn)(os, os->schedule_args);
+          }
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -185,13 +196,11 @@ void FakeOS_simStep(FakeOS* os){
         cpu->running=0;
       }
     } else{
-      if (os->schedule_fn && ! cpu->running){
+      // printf("else (if running)\n");
+      if (os->schedule_fn && !cpu->running && os->ready.first){
         (*os->schedule_fn)(os, os->schedule_args);
         cpu->running=(FakePCB*) List_popFront(&os->ready);
       }
-
-      // if running not defined and ready queue not empty
-      // put the first in ready to run
 
       // if (! cpu->running && os->ready.first) {
       //   cpu->running=(FakePCB*) List_popFront(&os->ready);
