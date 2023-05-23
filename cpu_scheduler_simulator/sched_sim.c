@@ -5,10 +5,6 @@
 
 FakeOS os;
 
-typedef struct {
-  int quantum;
-} SchedRRArgs;
-
 int is_running(FakeOS* os){
   for (int i = 0; i < NUM_CPU; i++){
     if (os->cpu_list->running){
@@ -24,7 +20,7 @@ void sched_SJF(FakeOS* os,void* args_){
 
   ListItem* aux = os->ready.first;
   FakePCB* pcb = (FakePCB*) malloc(sizeof(FakePCB));
-
+  //mette la lista dei progetti
   while(aux){
     pcb = (FakePCB*)aux;
     printf("Burst predicted processo: %d, %f\n", pcb->pid, pcb->predicted_burst);

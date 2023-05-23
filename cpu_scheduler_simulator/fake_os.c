@@ -51,35 +51,23 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   //cerca una cpu non impegnata da assegnare al processo.
   //ovvero se c'è almeno un core libero si può asseganre il nuoco processo 
   //a tale core, altrimenti la mette in coda ready
-  CPU_core* cpu = NULL;
-  for (int i = 0; i < NUM_CPU; i++){
-    if (!os->cpu_list[i].running){
-      cpu = &os->cpu_list[i];
-      break;
-    }
-  }
+  // CPU_core* cpu = NULL;
+  // for (int i = 0; i < NUM_CPU; i++){
+  //   if (!os->cpu_list[i].running){
+  //     cpu = &os->cpu_list[i];
+  //     break;
+  //   }
+  // }
 
   // depending on the type of the first event
   // we put the process either in ready or in waiting
   ProcessEvent* e=(ProcessEvent*)new_pcb->events.first;
   switch(e->type){
   case CPU:
-  //se c'è una cpu libera lo assegna (se la coda di ready è vuota)
-    if (cpu){
-      //se la lista ready è vuota aggiunge il processo direttamente
-      if (!os->ready.first) cpu->running = new_pcb;
-      
-    } else{
-      new_pcb->actual_burst = e->duration;
-      new_pcb->predicted_burst = new_pcb->actual_burst;
-      List_pushBack(&os->ready, (ListItem*) new_pcb);
-      
-      //all'istante 0 il predicted è uguale all'originale
-      
-      if (os->schedule_fn) {
-        (*os->schedule_fn)(os, os->schedule_args);
-      }
-    }
+  //inizializza i parametri della prediction
+    new_pcb->actual_burst = e->duration;
+    new_pcb->predicted_burst = new_pcb->actual_burst;
+    List_pushBack(&os->ready, (ListItem*) new_pcb);
     break;
   case IO:
     List_pushBack(&os->waiting, (ListItem*) new_pcb);
@@ -139,14 +127,12 @@ void FakeOS_simStep(FakeOS* os){
         case CPU:
         //CHIAMATA A SCHEDULER
           printf("\t\tmove to ready\n");
-
+          //calcolo prediction col valore alpha
           pcb->actual_burst = e->duration;
           float pred = pcb->predicted_burst;
           pcb->predicted_burst = ALPHA * pcb->actual_burst + ALPHA * pred;
           List_pushBack(&os->ready, (ListItem*) pcb);
-          // if (os->schedule_fn && os->ready.first) {
-          //   (*os->schedule_fn)(os, os->schedule_args);
-          // }
+          
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -186,11 +172,8 @@ void FakeOS_simStep(FakeOS* os){
           running->actual_burst = e->duration;
           float pred = running->predicted_burst;
           running->predicted_burst = ALPHA * running->actual_burst + ALPHA * pred;
-
           List_pushBack(&os->ready, (ListItem*) running);
-          // if (os->schedule_fn && os->ready.first) {
-          //   (*os->schedule_fn)(os, os->schedule_args);
-          // }
+
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -202,15 +185,14 @@ void FakeOS_simStep(FakeOS* os){
       }
     } else{
       // printf("else (if running)\n");
+      //richiama lo scheduler se non c'è nessun processo in running su questo core e se c'è almeno
+      //un elemento in coda ready
       if (os->schedule_fn && !cpu->running && os->ready.first){
         (*os->schedule_fn)(os, os->schedule_args);
         cpu->running=(FakePCB*) List_popFront(&os->ready);
+        printf("aggiunto nuovo processo\n");
       }
-
-      // if (! cpu->running && os->ready.first) {
-      //   cpu->running=(FakePCB*) List_popFront(&os->ready);
-      // }
-
+      
     }
 
   }
