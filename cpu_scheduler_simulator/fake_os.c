@@ -48,6 +48,9 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
 
   assert(new_pcb->events.first && "process without events");
 
+  //cerca una cpu non impegnata da assegnare al processo.
+  //ovvero se c'è almeno un core libero si può asseganre il nuoco processo 
+  //a tale core, altrimenti la mette in coda ready
   CPU_core* cpu = NULL;
   for (int i = 0; i < NUM_CPU; i++){
     if (!os->cpu_list[i].running){
@@ -61,14 +64,18 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   ProcessEvent* e=(ProcessEvent*)new_pcb->events.first;
   switch(e->type){
   case CPU:
+  //se c'è una cpu libera lo assegna (se la coda di ready è vuota)
     if (cpu){
-      cpu->running = new_pcb;
+      //se la lista ready è vuota aggiunge il processo direttamente
+      if (!os->ready.first) cpu->running = new_pcb;
+      
     } else{
+      new_pcb->actual_burst = e->duration;
+      new_pcb->predicted_burst = new_pcb->actual_burst;
       List_pushBack(&os->ready, (ListItem*) new_pcb);
       
       //all'istante 0 il predicted è uguale all'originale
-      new_pcb->actual_burst = e->duration;
-      new_pcb->predicted_burst = new_pcb->actual_burst;
+      
       if (os->schedule_fn) {
         (*os->schedule_fn)(os, os->schedule_args);
       }
@@ -136,12 +143,10 @@ void FakeOS_simStep(FakeOS* os){
           pcb->actual_burst = e->duration;
           float pred = pcb->predicted_burst;
           pcb->predicted_burst = ALPHA * pcb->actual_burst + ALPHA * pred;
-
-
           List_pushBack(&os->ready, (ListItem*) pcb);
-          if (os->schedule_fn && os->ready.first) {
-            (*os->schedule_fn)(os, os->schedule_args);
-          }
+          // if (os->schedule_fn && os->ready.first) {
+          //   (*os->schedule_fn)(os, os->schedule_args);
+          // }
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -183,9 +188,9 @@ void FakeOS_simStep(FakeOS* os){
           running->predicted_burst = ALPHA * running->actual_burst + ALPHA * pred;
 
           List_pushBack(&os->ready, (ListItem*) running);
-          if (os->schedule_fn && os->ready.first) {
-            (*os->schedule_fn)(os, os->schedule_args);
-          }
+          // if (os->schedule_fn && os->ready.first) {
+          //   (*os->schedule_fn)(os, os->schedule_args);
+          // }
           break;
         case IO:
           printf("\t\tmove to waiting\n");
