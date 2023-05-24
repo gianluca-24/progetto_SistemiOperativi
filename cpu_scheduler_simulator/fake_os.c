@@ -3,6 +3,15 @@
 #include <assert.h>
 
 #include "fake_os.h"
+//ritorna zero se almeno uno non sta runnando, 1 se tutti sono in running
+int all_running(FakeOS* os){
+  for (int i = 0; i < NUM_CPU; i++){
+    if (!os->cpu_list->running){
+      return 0;
+    }
+  }
+  return 1;
+}
 
 void FakeOS_init(FakeOS* os) {
   // os->running=0;
@@ -51,13 +60,13 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   //cerca una cpu non impegnata da assegnare al processo.
   //ovvero se c'è almeno un core libero si può asseganre il nuoco processo 
   //a tale core, altrimenti la mette in coda ready
-  // CPU_core* cpu = NULL;
-  // for (int i = 0; i < NUM_CPU; i++){
-  //   if (!os->cpu_list[i].running){
-  //     cpu = &os->cpu_list[i];
-  //     break;
-  //   }
-  // }
+  CPU_core* cpu = NULL;
+  for (int i = 0; i < NUM_CPU; i++){
+    if (!os->cpu_list[i].running){
+      cpu = &os->cpu_list[i];
+      break;
+    }
+  }
 
   // depending on the type of the first event
   // we put the process either in ready or in waiting
@@ -65,6 +74,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   switch(e->type){
   case CPU:
   //inizializza i parametri della prediction
+    
     new_pcb->actual_burst = e->duration;
     new_pcb->predicted_burst = new_pcb->actual_burst;
     List_pushBack(&os->ready, (ListItem*) new_pcb);
@@ -145,6 +155,8 @@ void FakeOS_simStep(FakeOS* os){
 
   CPU_core* cpu = NULL;
   FakePCB* running = NULL;
+  ProcessEvent* e;
+  float pred;
   //analizzo tutte le cpu
   for (int i=0; i < NUM_CPU; i++){
     cpu = &os->cpu_list[i];
@@ -152,7 +164,7 @@ void FakeOS_simStep(FakeOS* os){
     printf("\trunning pid: %d\n", running?running->pid:-1);
 
     if (running){
-      ProcessEvent* e=(ProcessEvent*) running->events.first;
+      e=(ProcessEvent*) running->events.first;
       assert(e->type==CPU);
       e->duration--;
       printf("\t\tremaining time:%d\n",e->duration);
@@ -168,9 +180,10 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
+          
           //calcolo predizione quando inserisco l'elemento e non ogni volta che chiamo lo scheduler
           running->actual_burst = e->duration;
-          float pred = running->predicted_burst;
+          pred = running->predicted_burst;
           running->predicted_burst = ALPHA * running->actual_burst + ALPHA * pred;
           List_pushBack(&os->ready, (ListItem*) running);
 
@@ -184,13 +197,12 @@ void FakeOS_simStep(FakeOS* os){
         cpu->running=0;
       }
     } else{
-      // printf("else (if running)\n");
       //richiama lo scheduler se non c'è nessun processo in running su questo core e se c'è almeno
       //un elemento in coda ready
       if (os->schedule_fn && !cpu->running && os->ready.first){
+        
         (*os->schedule_fn)(os, os->schedule_args);
         cpu->running=(FakePCB*) List_popFront(&os->ready);
-        printf("aggiunto nuovo processo\n");
       }
       
     }

@@ -5,6 +5,10 @@
 
 FakeOS os;
 
+typedef struct {
+  int quantum;
+} SJF;
+
 int is_running(FakeOS* os){
   for (int i = 0; i < NUM_CPU; i++){
     if (os->cpu_list->running){
@@ -15,17 +19,20 @@ int is_running(FakeOS* os){
 }
 
 void sched_SJF(FakeOS* os,void* args_){
-  // printf("ciao\n");
-  if (!os->ready.first || !os->ready.first->next) return;
+  if (!os->ready.first) return;
+
+  SJF* args = (SJF*) args_;
 
   ListItem* aux = os->ready.first;
   FakePCB* pcb = (FakePCB*) malloc(sizeof(FakePCB));
+  
   //mette la lista dei progetti
   while(aux){
     pcb = (FakePCB*)aux;
     printf("Burst predicted processo: %d, %f\n", pcb->pid, pcb->predicted_burst);
     aux = aux->next;
   }
+
   aux = os->ready.first;
   while (aux){
     pcb = (FakePCB*)aux;
@@ -35,11 +42,27 @@ void sched_SJF(FakeOS* os,void* args_){
     }
     aux = aux->next;
   }
+
+  FakePCB* pcb_q=(FakePCB*) os->ready.first;
+  ProcessEvent* e = (ProcessEvent*)pcb_q->events.first;
+
+  if (e->duration>args->quantum) {
+    ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
+    qe->list.prev=qe->list.next=0;
+    qe->type=CPU;
+    qe->duration=args->quantum;
+    e->duration-=args->quantum;
+    List_pushFront(&pcb_q->events, (ListItem*)qe);
+  }
   return;
 }
 
 int main(int argc, char** argv) {
   FakeOS_init(&os);
+  SJF sjf_args;
+  sjf_args.quantum=3;
+
+  os.schedule_args=&sjf_args;
   os.schedule_fn=sched_SJF;
   
   for (int i=1; i<argc; ++i){

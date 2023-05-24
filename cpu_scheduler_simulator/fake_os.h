@@ -1,6 +1,6 @@
 #include "fake_process.h"
 #include "linked_list.h"
-#define NUM_CPU 2
+#define NUM_CPU 1
 #define ALPHA 0.5
 #pragma once
 
@@ -10,13 +10,12 @@ typedef struct {
   ListHead events;
   //predicted burst salva l'ultimo valore predettp
   float predicted_burst;
-  //actual burst salva il valore effettivo del burst
+  //actual burst salva il valore effettivo del bursts
   int actual_burst;
 } FakePCB;
 
 typedef struct {
   FakePCB* running;
-  //quantum
 } CPU_core;
 
 struct FakeOS;
@@ -40,3 +39,4 @@ void sched_SJF(FakeOS* os,void* args_);
 // void swap_elem(FakeOS* os, ListItem* item1, ListItem* item2);
 void swap_elem(FakeOS* os, FakePCB* curr_pcb, FakePCB* next_pcb);
 int is_running(FakeOS* os);
+int all_running(FakeOS* os);
