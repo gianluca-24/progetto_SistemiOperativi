@@ -27,13 +27,13 @@ void sched_SJF(FakeOS* os,void* args_){
   FakePCB* pcb = (FakePCB*) malloc(sizeof(FakePCB));
   
   //mette la lista dei progetti
-  while(aux){
-    pcb = (FakePCB*)aux;
-    printf("Burst predicted processo: %d, %f\n", pcb->pid, pcb->predicted_burst);
-    aux = aux->next;
-  }
+  // while(aux){
+  //   pcb = (FakePCB*)aux;
+  //   printf("Burst predicted processo: %d, %f\n", pcb->pid, pcb->predicted_burst);
+  //   aux = aux->next;
+  // }
+  // aux = os->ready.first;
 
-  aux = os->ready.first;
   while (aux){
     pcb = (FakePCB*)aux;
     if (pcb->predicted_burst < ((FakePCB*)os->ready.first)->predicted_burst){

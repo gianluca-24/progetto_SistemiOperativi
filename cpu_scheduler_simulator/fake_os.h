@@ -1,6 +1,6 @@
 #include "fake_process.h"
 #include "linked_list.h"
-#define NUM_CPU 1
+#define NUM_CPU 3
 #define ALPHA 0.5
 #pragma once
 
@@ -39,4 +39,3 @@ void sched_SJF(FakeOS* os,void* args_);
 // void swap_elem(FakeOS* os, ListItem* item1, ListItem* item2);
 void swap_elem(FakeOS* os, FakePCB* curr_pcb, FakePCB* next_pcb);
 int is_running(FakeOS* os);
-int all_running(FakeOS* os);

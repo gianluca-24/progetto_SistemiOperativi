@@ -3,15 +3,6 @@
 #include <assert.h>
 
 #include "fake_os.h"
-//ritorna zero se almeno uno non sta runnando, 1 se tutti sono in running
-int all_running(FakeOS* os){
-  for (int i = 0; i < NUM_CPU; i++){
-    if (!os->cpu_list->running){
-      return 0;
-    }
-  }
-  return 1;
-}
 
 void FakeOS_init(FakeOS* os) {
   // os->running=0;
@@ -56,17 +47,6 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   new_pcb->events=p->events;
 
   assert(new_pcb->events.first && "process without events");
-
-  //cerca una cpu non impegnata da assegnare al processo.
-  //ovvero se c'è almeno un core libero si può asseganre il nuoco processo 
-  //a tale core, altrimenti la mette in coda ready
-  CPU_core* cpu = NULL;
-  for (int i = 0; i < NUM_CPU; i++){
-    if (!os->cpu_list[i].running){
-      cpu = &os->cpu_list[i];
-      break;
-    }
-  }
 
   // depending on the type of the first event
   // we put the process either in ready or in waiting
