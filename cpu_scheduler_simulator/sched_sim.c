@@ -9,6 +9,8 @@ typedef struct {
   int quantum;
 } SJF;
 
+//funzione che verifica se c'è almeno una cpu in running per evitare che si
+//interrompa la simulazione
 int is_running(FakeOS* os){
   for (int i = 0; i < NUM_CPU; i++){
     if (os->cpu_list->running){
@@ -25,15 +27,8 @@ void sched_SJF(FakeOS* os,void* args_){
 
   ListItem* aux = os->ready.first;
   FakePCB* pcb = (FakePCB*) malloc(sizeof(FakePCB));
-  
-  //mette la lista dei progetti
-  // while(aux){
-  //   pcb = (FakePCB*)aux;
-  //   printf("Burst predicted processo: %d, %f\n", pcb->pid, pcb->predicted_burst);
-  //   aux = aux->next;
-  // }
-  // aux = os->ready.first;
 
+  //aggiornamento lista di ready: mette in prima posizione il prossimo elemnento.
   while (aux){
     pcb = (FakePCB*)aux;
     if (pcb->predicted_burst < ((FakePCB*)os->ready.first)->predicted_burst){
@@ -42,6 +37,8 @@ void sched_SJF(FakeOS* os,void* args_){
     }
     aux = aux->next;
   }
+
+  //gestione del quanto di tempo, ripreso dal codice originale
 
   FakePCB* pcb_q=(FakePCB*) os->ready.first;
   ProcessEvent* e = (ProcessEvent*)pcb_q->events.first;
@@ -77,8 +74,7 @@ int main(int argc, char** argv) {
     }
   }
   printf("num processes in queue %d\n", os.processes.size);
-  while(os.running
-        || os.ready.first
+  while(os.ready.first
         || os.waiting.first
         || os.processes.first
         || is_running(&os)){

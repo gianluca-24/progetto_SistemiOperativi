@@ -53,7 +53,8 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   ProcessEvent* e=(ProcessEvent*)new_pcb->events.first;
   switch(e->type){
   case CPU:
-  //inizializza i parametri della prediction
+    //inizializza i parametri della prediction
+    //e inserisce nella lista ready
     
     new_pcb->actual_burst = e->duration;
     new_pcb->predicted_burst = new_pcb->actual_burst;
@@ -122,7 +123,6 @@ void FakeOS_simStep(FakeOS* os){
           float pred = pcb->predicted_burst;
           pcb->predicted_burst = ALPHA * pcb->actual_burst + ALPHA * pred;
           List_pushBack(&os->ready, (ListItem*) pcb);
-          
           break;
         case IO:
           printf("\t\tmove to waiting\n");

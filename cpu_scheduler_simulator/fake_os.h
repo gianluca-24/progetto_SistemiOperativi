@@ -4,16 +4,18 @@
 #define ALPHA 0.5
 #pragma once
 
+//aggiunti due campi al FakePCB
+//predicted burst salva l'ultimo valore predetto
+//actual burst salva il valore effettivo del bursts
 typedef struct {
   ListItem list;
   int pid;
   ListHead events;
-  //predicted burst salva l'ultimo valore predettp
   float predicted_burst;
-  //actual burst salva il valore effettivo del bursts
   int actual_burst;
 } FakePCB;
 
+//aggiungo la struct CPU_core
 typedef struct {
   FakePCB* running;
 } CPU_core;
@@ -21,6 +23,7 @@ typedef struct {
 struct FakeOS;
 typedef void (*ScheduleFn)(struct FakeOS* os, void* args);
 
+//aggiungo la lista di CPU_core per modellare il sistema come multicore
 typedef struct FakeOS{
   FakePCB* running;
   ListHead ready;
