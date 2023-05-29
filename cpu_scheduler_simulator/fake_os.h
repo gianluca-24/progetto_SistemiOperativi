@@ -1,18 +1,19 @@
 #include "fake_process.h"
 #include "linked_list.h"
-#define NUM_CPU 3
 #define ALPHA 0.5
 #pragma once
 
 //aggiunti due campi al FakePCB
 //predicted burst salva l'ultimo valore predetto
 //actual burst salva il valore effettivo del bursts
+//bool serve per identificare se per l'ultimo burst è stata già calcolata la predizione
 typedef struct {
   ListItem list;
   int pid;
   ListHead events;
   float predicted_burst;
-  int actual_burst;
+  float actual_burst;
+  int bool;
 } FakePCB;
 
 //aggiungo la struct CPU_core
@@ -21,7 +22,7 @@ typedef struct {
 } CPU_core;
 
 struct FakeOS;
-typedef void (*ScheduleFn)(struct FakeOS* os, void* args);
+typedef FakePCB* (*ScheduleFn)(struct FakeOS* os, void* args);
 
 //aggiungo la lista di CPU_core per modellare il sistema come multicore
 typedef struct FakeOS{
@@ -32,13 +33,13 @@ typedef struct FakeOS{
   ScheduleFn schedule_fn;
   void* schedule_args;
   ListHead processes;
-  CPU_core cpu_list[NUM_CPU];
+  CPU_core* cpu_list;
+  int num_cpu;
 } FakeOS;
 
 void FakeOS_init(FakeOS* os);
 void FakeOS_simStep(FakeOS* os);
 void FakeOS_destroy(FakeOS* os);
-void sched_SJF(FakeOS* os,void* args_);
-// void swap_elem(FakeOS* os, ListItem* item1, ListItem* item2);
-void swap_elem(FakeOS* os, FakePCB* curr_pcb, FakePCB* next_pcb);
+FakePCB* sched_SJF(FakeOS* os,void* args_);
 int is_running(FakeOS* os);
+float prediction(FakePCB* pcb);

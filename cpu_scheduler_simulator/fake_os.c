@@ -5,14 +5,22 @@
 #include "fake_os.h"
 
 void FakeOS_init(FakeOS* os) {
-  // os->running=0;
   List_init(&os->ready);
   List_init(&os->waiting);
   List_init(&os->processes);
   os->timer=0;
   os->schedule_fn=0;
 
-  for (int i = 0; i < NUM_CPU; i++){
+  //inserimento num cpu da tastiera
+  fprintf(stdout, "Inserisci il numero di CPU: \n"); 
+  fflush(stdout);
+  fscanf(stdin, "%d", &(os->num_cpu));
+  fprintf(stdout, "Numero CPU: %d\n",os->num_cpu); 
+  fflush(stdout);
+
+  os->cpu_list = (CPU_core*)malloc(sizeof(CPU_core) * os->num_cpu);
+
+  for (int i = 0; i < os->num_cpu; i++){
     os->cpu_list[i].running = 0;
   }
 
@@ -53,11 +61,10 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   ProcessEvent* e=(ProcessEvent*)new_pcb->events.first;
   switch(e->type){
   case CPU:
-    //inizializza i parametri della prediction
-    //e inserisce nella lista ready
-    
-    new_pcb->actual_burst = e->duration;
-    new_pcb->predicted_burst = new_pcb->actual_burst;
+    //inizializza i parametri e aggiunge alla lista
+    new_pcb->actual_burst = new_pcb->predicted_burst= 0;
+    new_pcb->bool = 0;
+
     List_pushBack(&os->ready, (ListItem*) new_pcb);
     break;
   case IO:
@@ -116,12 +123,7 @@ void FakeOS_simStep(FakeOS* os){
         e=(ProcessEvent*) pcb->events.first;
         switch (e->type){
         case CPU:
-        //CHIAMATA A SCHEDULER
           printf("\t\tmove to ready\n");
-          //calcolo prediction col valore alpha
-          pcb->actual_burst = e->duration;
-          float pred = pcb->predicted_burst;
-          pcb->predicted_burst = ALPHA * pcb->actual_burst + ALPHA * pred;
           List_pushBack(&os->ready, (ListItem*) pcb);
           break;
         case IO:
@@ -136,9 +138,8 @@ void FakeOS_simStep(FakeOS* os){
   CPU_core* cpu = NULL;
   FakePCB* running = NULL;
   ProcessEvent* e;
-  float pred;
   //analizzo tutte le cpu
-  for (int i=0; i < NUM_CPU; i++){
+  for (int i=0; i < os->num_cpu; i++){
     cpu = &os->cpu_list[i];
     running = cpu->running;
     printf("\trunning pid: %d\n", running?running->pid:-1);
@@ -147,6 +148,8 @@ void FakeOS_simStep(FakeOS* os){
       e=(ProcessEvent*) running->events.first;
       assert(e->type==CPU);
       e->duration--;
+      //incrementa manualmente l'actual_burst così riesce a calcolare esattamente il burst
+      running->actual_burst++;
       printf("\t\tremaining time:%d\n",e->duration);
       if (e->duration == 0){
         printf("\t\tend burst\n");
@@ -160,13 +163,7 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
-          
-          //calcolo predizione quando inserisco l'elemento e non ogni volta che chiamo lo scheduler
-          running->actual_burst = e->duration;
-          pred = running->predicted_burst;
-          running->predicted_burst = ALPHA * running->actual_burst + ALPHA * pred;
           List_pushBack(&os->ready, (ListItem*) running);
-
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -180,9 +177,7 @@ void FakeOS_simStep(FakeOS* os){
       //richiama lo scheduler se non c'è nessun processo in running su questo core e se c'è almeno
       //un elemento in coda ready
       if (os->schedule_fn && !cpu->running && os->ready.first){
-        
-        (*os->schedule_fn)(os, os->schedule_args);
-        cpu->running=(FakePCB*) List_popFront(&os->ready);
+        cpu->running = (*os->schedule_fn)(os, os->schedule_args);
       }
       
     }
