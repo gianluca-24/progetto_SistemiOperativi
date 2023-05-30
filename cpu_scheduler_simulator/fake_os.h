@@ -35,6 +35,8 @@ typedef struct FakeOS{
   ListHead processes;
   CPU_core* cpu_list;
   int num_cpu;
+  
+  ListHead buffer;
 } FakeOS;
 
 void FakeOS_init(FakeOS* os);

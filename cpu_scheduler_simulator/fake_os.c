@@ -8,6 +8,7 @@ void FakeOS_init(FakeOS* os) {
   List_init(&os->ready);
   List_init(&os->waiting);
   List_init(&os->processes);
+  List_init(&os->buffer);
   os->timer=0;
   os->schedule_fn=0;
 
@@ -124,7 +125,8 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
-          List_pushBack(&os->ready, (ListItem*) pcb);
+          List_pushBack(&os->buffer,(ListItem*) pcb);
+          // List_pushBack(&os->ready, (ListItem*) pcb);
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -138,6 +140,7 @@ void FakeOS_simStep(FakeOS* os){
   CPU_core* cpu = NULL;
   FakePCB* running = NULL;
   ProcessEvent* e;
+  
   //analizzo tutte le cpu
   for (int i=0; i < os->num_cpu; i++){
     cpu = &os->cpu_list[i];
@@ -163,7 +166,8 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
-          List_pushBack(&os->ready, (ListItem*) running);
+          List_pushBack(&os->buffer,(ListItem*) running);
+          // List_pushBack(&os->ready,(ListItem*) running);
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -183,6 +187,15 @@ void FakeOS_simStep(FakeOS* os){
     }
 
   }
+  
+  //aggiungo in coda ready
+  ListItem* aux_buf = os->buffer.first;
+  while (aux_buf){
+    List_pushBack(&os->ready,List_popFront(&os->buffer));
+    aux_buf = aux_buf->next;
+  }
+
+
   ++os->timer;
 }
 
