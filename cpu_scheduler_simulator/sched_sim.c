@@ -43,10 +43,10 @@ FakePCB* sched_SJF(FakeOS* os,void* args_){
   
   while (aux){
     pcb = (FakePCB*)aux;
-    //NUOVA IMPLEMENTAZIONE: semplicemente trovo il min
+    
     pcb->predicted_burst = pcb->bool == 0 ? prediction(pcb) : pcb->predicted_burst;
     min->predicted_burst = min->bool == 0 ? prediction(min) : min->predicted_burst;
-
+    //NUOVA IMPLEMENTAZIONE: semplicemente trovo il min
     if (pcb->predicted_burst < min->predicted_burst) min = pcb;
 
     aux = aux->next;
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
     }
   }
   //inserimento lunghezza quanto da tastiera
-  fprintf(stdout, "Inserisci il quantum: \n"); 
+  fprintf(stdout, "\nInserisci il quantum: \n"); 
   fflush(stdout);
   fscanf(stdin, "%d", &sjf_args.quantum);
   fprintf(stdout, "Quantum scelto: %d\n",sjf_args.quantum); 
